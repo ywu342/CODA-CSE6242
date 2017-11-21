@@ -3,6 +3,8 @@ necessary packages:
 pip install pandas
 pip install flask
 pip install sklearn
+pip install scipy
+pip install numpy
 
 -- This should already be inside your code
 pip install sqlite3

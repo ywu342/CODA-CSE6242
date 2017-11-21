@@ -4,6 +4,7 @@ import time
 import data_utils
 import os, glob, pdb
 import pandas
+from SVMRank import SVMRank
 #from sklearn.manifold import TSNE
 #from sklearn.decomposition import PCA
 
@@ -28,6 +29,14 @@ def main():
     #i.e. subset_features = ['EAN300205D', 'AGE040205D','BNK010205D','BPS030205D','CRM250207D']
     #THis is the function that actually gets you the frame with the features you are focusing on, therefor focus_frame
     focus_frame = data_utils.get_features(subset_features,data)
+    
+    #sorted_frame = focus_frame.sort_values('EAN300205D', ascending=False)
+    #print sorted_frame
+    svm = SVMRank(focus_frame, 10)
+    weights = svm.train_top_k(False)
+    frame_ranks = svm.get_full_rank()
+    score = svm.score_test()
+    print frame_ranks
 
     #-----------------------------
     #AND here you work on the frame with your ranking and testing, etc
