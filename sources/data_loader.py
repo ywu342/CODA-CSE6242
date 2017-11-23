@@ -4,7 +4,7 @@ import time
 import data_utils
 import os, glob, pdb
 import pandas
-from SVMRank import SVMRank
+from SVMRank import SVMRank, get_AP
 #from sklearn.manifold import TSNE
 #from sklearn.decomposition import PCA
 
@@ -24,19 +24,13 @@ def main():
     #This gets a subset of features from the dataframe. SO the user provides a set of features (i'll handle how that gets done)
     #For your work, just add or replace elements un the subset_features list below
     #this will get you a dataframe that has columns: 'fips_code', 'AGE040205D','BNK010205D', etc
-    query_feature = ['EAN300205D']
-    subset_features = query_feature + ['AGE040205D','BNK010205D','BPS030205D','CRM250207D']
+    #query_feature = ['EAN300205D']
+    #subset_features = query_feature + ['AGE040205D','BNK010205D','BPS030205D','CRM250207D']
     #i.e. subset_features = ['EAN300205D', 'AGE040205D','BNK010205D','BPS030205D','CRM250207D']
     #THis is the function that actually gets you the frame with the features you are focusing on, therefor focus_frame
-    focus_frame = data_utils.get_features(subset_features,data)
-    
+    #focus_frame = data_utils.get_features(subset_features,data)
     #sorted_frame = focus_frame.sort_values('EAN300205D', ascending=False)
-    #print sorted_frame
-    svm = SVMRank(focus_frame, 10)
-    weights = svm.train_top_k(False)
-    frame_ranks = svm.get_full_rank()
-    score = svm.score_test()
-    print frame_ranks
+
 
     #-----------------------------
     #AND here you work on the frame with your ranking and testing, etc
@@ -50,7 +44,7 @@ def main():
     #--------------------------------
     print 'Finished with datastream in '+ str(time.time()-start)
     #This is for debugging. 
-    pdb.set_trace()
+    #pdb.set_trace()
 
 
 if __name__=='__main__':
