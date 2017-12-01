@@ -232,13 +232,72 @@ def get_AP(rel):
         return 0.
     return np.mean(out)
     
+def experiments_k_i_ed():
+    # [query, ranking1, ranking2 ..]
+    num_trials = 10
+    features = []
+    features.append(['HEA010207D', 'BZN505206D', 'CLF040206D', 'EMN240205D', 'IPE010207D', \
+ 'HEA030206D', 'EMN370205D', 'AGE040206D', 'CRM260206D', 'BZN240206D',
+ 'EMN290206D', 'EMN012206D', 'BZN505208D', 'CRM210206D', 'BZA115208D'])
+    rand_query = random.sample(range(0, len(features[0])), num_trials-1)
+    for c in rand_query:
+        focus = list(features[0])
+        tmp = focus[c]
+        focus[c] = focus[0]
+        focus[0] = tmp
+        features.append(focus)
+    weights = []
+# truth weights from iteratively training 50 random samples
+    weights.append(np.array([-0.61481773, -0.01632002, 0.38787208, 0.06875974, 5.77053934 ,1.20733114, \
+  9.55994288 ,-1.85361942 ,-0.11975094 ,-0.07411218 ,-0.37940481, -0.28949429, \
+ -1.16763509, -0.01843858]))
+    ks = np.array([5, 10, 15, 25, 50, 100])
+    data = data_utils.load_data()
+# prepare for truth rankings from the weights
+    df_dict = {}
+    true_ranks_dict = {}
+    true_aps = []
+    for k in xrange(len(features)):
+        df_dict[k] = data_utils.get_features(features[k], data)
+        #r = np.dot(df_dict[k].iloc[:, 2:], weights[k].T).ravel()
+        #cols = [df_dict[k].columns[0]]
+        #cols.append(df_dict[k].columns[1]) 
+        #cols.append('SVMRank')
+        #rank_df = pd.DataFrame(0.0, index=df_dict[k].index, columns=cols)
+        #rank_df.iloc[:, :2] = df_dict[k].iloc[:, :2]
+        #rank_df['SVMRank'] = r
+        #true_ranks_dict[k] = rank_df.sort_values('SVMRank', ascending=False)
+        #true_ranks = true_ranks_dict[k]
+        #sorted_df = df_dict[k].sort_values(df_dict[k].columns[1], ascending=False)
+        #cur_ap = get_AP(true_ranks['fips_code'].values==sorted_df['fips_code'].values)
+        #true_aps.append(cur_ap)
+    arr = np.zeros(shape=(2*ks.size, num_trials), dtype=float)
+    for i in xrange(2):
+        for j in xrange(ks.size):
+            cur_k = ks[j]
+            arr_i = i*ks.size+j
+            for c in xrange(num_trials):
+                svm = SVMRank(df_dict[c], cur_k)
+                for t in xrange(num_trials):
+                    ws = svm.train_top_k() if i==0 else svm.train_top_1_k()
+                    ranks_df = svm.get_full_rank() 
+                    sorted_df = df_dict[k].sort_values(df_dict[k].columns[1], ascending=False)
+                    cur_ap = get_AP(sorted_df['fips_code'].values==ranks_df['fips_code'].values)
+                    arr[arr_i][c] += cur_ap
+                arr[arr_i][c] /= num_trials
+    print 'AP array(i*k*c): '
+    for i in arr:
+        print ",".join(str(v) for v in i)
+    print 'MAPs for top-k and top-1-k: ', np.mean(arr, axis=1)
+    print 'MAPs bw ground truth and true', true_aps
+
 
 def experiments_k_i():
     # [query, ranking1, ranking2 ..]
     features = []
     features.append(['EDU015208D', 'EMN012207D', 'EAN450207D', 'CLF040209D', 'CLF010209D'])
-    features.append(['CRM210208D', 'EDU695209D', 'FED110208D', 'HEA040207D', 'HEA270208D', 'EMN290207D'])
-    features.append(['BNK150209D', 'AGE040209D', 'BZA210209D', 'CLF040209D'])
+#    features.append(['CRM210208D', 'EDU695209D', 'FED110208D', 'HEA040207D', 'HEA270208D', 'EMN290207D'])
+#    features.append(['BNK150209D', 'AGE040209D', 'BZA210209D', 'CLF040209D'])
     features_asc = [False, True, False]
     weights = []
 # truth weights from iteratively training 50 random samples
@@ -249,6 +308,7 @@ def experiments_k_i():
     weights.append(np.array([0.42236209, -1.34034753, 0.10839856, 9.35157845]))
     weights.append(np.array([-1.252217, 2.55608963, 1.61006832, -0.35262227, 0.46754842]))
     weights.append(np.array([3.70088954, 3.26022662, 0.0143878]))
+    num_trials = 2
     ks = np.array([5, 10, 15, 25, 50, 100, 200, 300])
     data = data_utils.load_data()
 # prepare for truth rankings from the weights
@@ -278,19 +338,20 @@ def experiments_k_i():
             w_sum = 0.
             for k in xrange(len(features)):
                 svm = SVMRank(df_dict[k], cur_k)
-                ws = svm.train_top_k() if i==0 else svm.train_top_1_k()
-# find ED between exp. weights and true weights
-                w_sum += np.linalg.norm(ws-weights[k])
-                ranks_df = svm.get_full_rank() 
                 true_ranks = true_ranks_dict[k]
-                #print true_ranks['fips_code'].values
-                #print ranks_df['fips_code'].values
-                cur_ap = get_AP(true_ranks['fips_code'].values==ranks_df['fips_code'].values)
-                ap_list.append(cur_ap)
-                ap_sum += cur_ap 
-            arr[i, j] = ap_sum / len(features)
-            dist_arr[i, j] = w_sum / len(features)
-            #print str(i)+"way "+str(cur_k)+"k "+"_aps: ", ap_list
+                for c in xrange(num_trials):
+                    ws = svm.train_top_k() if i==0 else svm.train_top_1_k()
+# find ED between exp. weights and true weights
+                    w_sum += np.linalg.norm(ws-weights[k])
+                    ranks_df = svm.get_full_rank() 
+                    #print true_ranks['fips_code'].values
+                    #print ranks_df['fips_code'].values
+                    cur_ap = get_AP(true_ranks['fips_code'].values==ranks_df['fips_code'].values)
+                    ap_list.append(cur_ap)
+                    ap_sum += cur_ap 
+            arr[i, j] = ap_sum / len(features)/num_trials
+            dist_arr[i, j] = w_sum / len(features)/num_trials
+            print str(i)+"way "+str(cur_k)+"k "+"_aps: ", ap_list
     print 'AP array(i*k): '
     print arr
     print 'MAPs for top-k and top-1-k: ', np.mean(arr, axis=1)
@@ -308,16 +369,28 @@ def train_ground_truth_wts():
     #subset_features = query_feature + ['EMN012207D','EAN450207D','CLF040209D','CLF010209D']
     #query_feature = ['CRM210208D']
     #subset_features = query_feature + ['EDU695209D','FED110208D','HEA040207D','HEA270208D', 'EMN290207D']
-    query_feature = ['BNK150209D']
-    subset_features = query_feature + ['AGE040209D','BZA210209D','CLF040209D']
+    #query_feature = ['BNK150209D']
+    #subset_features = query_feature + ['AGE040209D','BZA210209D','CLF040209D']
+    subset_features = ['HEA010207D', 'BZN505206D', 'CLF040206D', 'EMN240205D', 'IPE010207D', \
+ 'HEA030206D', 'EMN370205D', 'AGE040206D', 'CRM260206D', 'BZN240206D',
+ 'EMN290206D', 'EMN012206D', 'BZN505208D', 'CRM210206D', 'BZA115208D']
     focus_frame = data_utils.get_features(subset_features,data)
     svm = SVMRank(focus_frame, k=50)
     print svm.train_random_k_iter(iterations=1000,k=50)
+
+def get_random_features(n):
+    data = data_utils.load_data()
+    total = len(data.columns)
+    rand_inds = random.sample(range(0, total), n)
+    rand_samples = data.columns.values[rand_inds]
+    print rand_samples
     
 
 if __name__=='__main__':
-    experiments_k_i()
+#    get_random_features(15)
 #    train_ground_truth_wts()
+    experiments_k_i_ed()
+#    experiments_k_i()
 #    data = data_utils.load_data()
 #    #query_feature = ['EDU015208D']
 #    #subset_features = query_feature + ['EMN012207D','EAN450207D','CLF040209D','CLF010209D']
