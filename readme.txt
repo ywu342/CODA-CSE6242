@@ -1,4 +1,5 @@
-necessary packages:
+This is for Python 2.7.
+Necessary packages:
 
 pip install pandas
 pip install flask
@@ -19,13 +20,6 @@ From there, run:
 
 python sources/data_loader.py
 
-This will run everything.
-Your code will be in data_loader.py
-There are explanations in there.
+This will run everything. It will output the top 10 counties based on SVM ranking.
 
-Take a look at data_utils.py for detaisl on classes and helper functions.
-
-
-Also, this is for Python 2.7. Let me know if there are issues for 3.x and I'll try to fix them. There shouldn't be any major problems.
-
-NOTE: The code takes ~30 sec to startup.
+NOTE: The code takes ~30 sec to startup to load data.
